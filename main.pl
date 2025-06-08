@@ -108,10 +108,16 @@ print_info(FullName) :-
     format('Level: ~w~n', [Level]),
     format('Total child: ~w~n', [ChildCount]),
     (is_alive(FullName) -> write('Alive') ; write('Dead')), nl.
-
+% Does he have a wife?
 is_married(Person) :-
     marriage(Person, _);
     marriage(_, Person).
+
+% Who is his wife?
+spouse(Person, Spouse) :-
+    marriage(Person, Spouse)
+    ;
+    marriage(Spouse, Person).
 
 % Marriage predicate
 marry(Name1, Name2) :-
@@ -180,7 +186,44 @@ is_grandparent_of(Grandparent, Child) :-
         person(NM, SM, _, _, _, GF2, GM2),
         full_name(NM, SM, Mother),
         (Grandparent = GF2; Grandparent = GM2)
-    ).    
+    ). 
+are_elti(Wife1, Wife2) :-
+    person(_, _, female, _, _, _, _),  
+    person(_, _, female, _, _, _, _),  
+    spouse(Husband1, Wife1),
+    spouse(Husband2, Wife2),
+    are_siblings(Husband1, Husband2),
+    Wife1 \= Wife2.
+
+are_bacanak(Husband1, Husband2) :-
+    person(_, _, male, _, _, _, _),   
+    person(_, _, male, _, _, _, _),   
+    spouse(Husband1, Wife1),
+    spouse(Husband2, Wife2),
+    are_siblings(Wife1, Wife2),
+    Husband1 \= Husband2.   
+
+are_baldiz(Person, Baldiz) :-
+    spouse(Person, Spouse),
+    are_siblings(Spouse, Baldiz),
+    female(Baldiz).
+
+are_kayinbirader(Person, Kayinbirader) :-
+    spouse(Person, Spouse),
+    (
+        (are_siblings(Spouse, Kayinbirader), male(Kayinbirader))
+    ;  
+    ).
+are_kayinvalide(Person, Kayinvalide) :-
+    spouse_of(Person, Spouse),
+    is_parent_of(Kayinvalide, Spouse),
+    female(Kayinvalide). 
+     
+are_kayinpeder(Person, Kayinpeder) :-
+    spouse_of(Person, Spouse),
+    is_parent_of(Kayinpeder, Spouse),
+    male(Kayinpeder).
+      
 % Check if two people are siblings
 are_siblings(Name1, Name2) :-
     person(N1, S1, _, _, _, Father, Mother),
@@ -208,6 +251,18 @@ are_close_relatives(Name1, Name2) :-
     ;   is_aunt_by_father(Name2, Name1)
     ;   is_aunt_by_mother(Name1, Name2)
     ;   is_aunt_by_mother(Name2, Name1)
+    ;   are_kayinbirader(Name1,Name2)
+    ;   are_kayinbirader(Name2,Name1)
+    ;   are_elti(Name1,Name2)
+    ;   are_elti(Name2,Name1)
+    ;   are_baldiz(Name1,Name2)
+    ;   are_baldiz(Name2,Name1)
+    ;   are_bacanak(Name1,Name2)
+    ;   are_bacanak(Name2,Name1)
+    ;   are_kayinpeder(Name1,Name2)
+    ;   are_kayinpeder(Name2,Name1)
+    ;   are_kayinvalide(Name1,Name2)
+    ;   are_kayinvalide(Name2,Name1)
     ).
     
 % Print family tree
