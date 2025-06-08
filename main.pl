@@ -187,6 +187,119 @@ is_grandparent_of(Grandparent, Child) :-
         full_name(NM, SM, Mother),
         (Grandparent = GF2; Grandparent = GM2)
     ). 
+
+    is_nephew_or_niece(NephewOrNiece, Person) :-
+    person(NP, SP, _, _, _, Father, Mother),
+    full_name(NP, SP, NephewOrNiece),
+    (   person(NF, SF, _, _, _, _, _),
+        full_name(NF, SF, Father),
+        are_siblings(Father, Person)
+    ;
+        person(NM, SM, _, _, _, _, _),
+        full_name(NM, SM, Mother),
+        are_siblings(Mother, Person)
+    ).
+
+    is_cousin(Cousin, Person) :-
+    person(N, S, _, _, _, Father, Mother),
+    full_name(N, S, Person),
+    (   are_siblings(UncleOrAunt, Father)
+    ;   are_siblings(UncleOrAunt, Mother)
+    ),
+    person(NC, SC, _, _, _, UncleOrAunt, _),
+    full_name(NC, SC, Cousin)
+    ;
+    person(NC, SC, _, _, _, _, UncleOrAunt),
+    full_name(NC, SC, Cousin).
+
+    is_child(Child, Parent) :-
+    person(NC, SC, _, _, _, Father, Mother),
+    full_name(NC, SC, Child),
+    (Parent = Father ; Parent = Mother),
+    Parent \= none.
+
+    is_younger_sister(YoungerSister, Person) :-
+    are_siblings(YoungerSister, Person),
+    person(NS, SS, f, BirthYearS, _, _, _),
+    full_name(NS, SS, YoungerSister),
+    person(NP, SP, _, BirthYearP, _, _, _),
+    full_name(NP, SP, Person),
+    BirthYearS > BirthYearP.
+
+    is_younger_brother(YoungerBrother, Person) :-
+    are_siblings(YoungerBrother, Person),
+    person(NB, SB, m, BirthYearB, _, _, _),
+    full_name(NB, SB, YoungerBrother),
+    person(NP, SP, _, BirthYearP, _, _, _),
+    full_name(NP, SP, Person),
+    BirthYearB > BirthYearP.
+
+
+    is_abla(Abla, Person) :-
+    are_siblings(Abla, Person),
+    person(NA, SA, f, BirthYearA, _, _, _),
+    full_name(NA, SA, Abla),
+    person(NP, SP, _, BirthYearP, _, _, _),
+    full_name(NP, SP, Person),
+    BirthYearA < BirthYearP.
+
+    is_abi(Abi, Person) :-
+    are_siblings(Abi, Person),
+    person(NA, SA, m, BirthYearA, _, _, _),
+    full_name(NA, SA, Abi),
+    person(NP, SP, _, BirthYearP, _, _, _),
+    full_name(NP, SP, Person),
+    BirthYearA < BirthYearP.
+
+    is_eniste(Eniste, Person) :-
+    (   are_siblings(Sister, Person),
+        spouse(Eniste, Sister),
+        male(Eniste)
+    ;
+        spouse(Person, Spouse),
+        are_siblings(SisterInLaw, Spouse),
+        spouse(Eniste, SisterInLaw),
+        male(Eniste)
+    ).
+    is_yenge(Yenge, Person) :-
+    (   are_siblings(Brother, Person),
+        spouse(Brother, Yenge),
+        female(Yenge)
+    ;
+        spouse(Person, Spouse),
+        are_siblings(BrotherInLaw, Spouse),
+        spouse(BrotherInLaw, Yenge),
+        female(Yenge)
+    ).
+    is_gelin(Gelin, Person) :-
+    person(NC, SC, _, _, _, Father, Mother),
+    full_name(NC, SC, Child),
+    (Person = Father ; Person = Mother),
+    male(Child),
+    spouse(Child, Gelin),
+    female(Gelin).
+
+    is_damat(Damat, Person) :-
+    person(NC, SC, _, _, _, Father, Mother),
+    full_name(NC, SC, Child),
+    (Person = Father ; Person = Mother),
+    female(Child),
+    spouse(Child, Damat),
+    male(Damat).
+
+    is_son(Son, Parent) :-
+    person(NC, SC, m, _, _, Father, Mother),
+    full_name(NC, SC, Son),
+    (Parent = Father ; Parent = Mother),
+    Parent \= none.
+
+    is_daughter(Daughter, Parent) :-
+    person(NC, SC, f, _, _, Father, Mother),
+    full_name(NC, SC, Daughter),
+    (Parent = Father ; Parent = Mother),
+    Parent \= none.
+
+
 are_elti(Wife1, Wife2) :-
     person(_, _, female, _, _, _, _),  
     person(_, _, female, _, _, _, _),  
@@ -312,12 +425,12 @@ print_level_names([Name|Rest], Printed) :-
     ).
 
 should_include_person(_-FullName) :-
-    % Kişinin anne veya babası soy ağacında kayıtlıysa göster
+    % Kisinin anne veya babasi soy agacinda kayitliysa goster
     person(N, S, _, _, _, Father, Mother),
     full_name(N, S, FullName),
     (   (Father \= none, person(FN, FS, _, _, _, _, _), full_name(FN, FS, Father))
     ;   (Mother \= none, person(MN, MS, _, _, _, _, _), full_name(MN, MS, Mother))
-    ;   (marriage(FullName, _) ; marriage(_, FullName))  % Veya evliyse göster
+    ;   (marriage(FullName, _) ; marriage(_, FullName))  % Veya evliyse goster
     ).
 
 
@@ -331,37 +444,58 @@ find_relation(Name1, Name2, Relation) :-
     ->  Relation = 'Baba'
     ;   Name1 = M2
     ->  Relation = 'Anne'
-    ;   Name2 = F1
-    ->  (G1 = m -> Relation = 'Ogul' ; Relation = 'Kiz')
-    ;   Name2 = M1
-    ->  (G1 = m -> Relation = 'Ogul' ; Relation = 'Kiz')
-    ;   are_siblings(Name1, Name2)
-    ->  (   age(Name1, Age1), age(Name2, Age2),
-            (   Age1 > Age2
-            ->  (G1 = m -> Relation = 'Abi' ; Relation = 'Abla')
-            ;   Relation = 'Kardes'
-            )
-        )
-    ;   (   (F2 \= none, are_siblings(Name1, F2)) ; (M2 \= none, are_siblings(Name1, M2))
-        ->  (G1 = m -> Relation = 'Dayi' ; Relation = 'Teyze')
-        ;   (   (F1 \= none, are_siblings(Name2, F1)) ; (M1 \= none, are_siblings(Name2, M1))
-            ->  Relation = 'Yeğen'
-            ;   (   (F1 \= none, F2 \= none, are_siblings(F1, F2)) ; (M1 \= none, M2 \= none, are_siblings(M1, M2))
-                ->  Relation = 'Kuzen'
-                ;   (   marriage(Name1, Name2) ; marriage(Name2, Name1)
-                    ->  Relation = 'Eş'
-                    ;   find_marriage_relation(Name1, Name2, G1, G2, Relation)
-                    )
-                )
-            )
-        )
+        ;is_uncle_by_father(Name1, Name2)
+        ->  Relation = 'Amca'
+        ;   is_uncle_by_mother(Name1, Name2)
+        ->  Relation = 'Dayi'
+        ;   is_aunt_by_father(Name1, Name2)
+        ->  Relation = 'Hala'
+        ;   is_aunt_by_mother(Name1, Name2)
+        ->  Relation = 'Teyze'
+        ;   is_nephew_or_niece(Name1, Name2)
+        ->  Relation = 'Yegen'
+        ;   is_cousin(Name1, Name2)
+        ->  Relation = 'Kuzen'
+        ;   is_child(Name1, Name2)
+        ->  Relation = 'cocuk'
+        ;   is_younger_sister(Name1, Name2)
+        ->  Relation = 'Kücük Kiz Kardes'
+        ;   is_younger_brother(Name1, Name2)
+        ->  Relation = 'Kücük Erkek Kardes'
+        ;   is_abla(Name1, Name2)
+        ->  Relation = 'Abla'
+        ;   is_abi(Name1, Name2)
+        ->  Relation = 'Abi'
+        ;   is_eniste(Name1, Name2)
+        ->  Relation = 'Eniste'
+        ;   is_yenge(Name1, Name2)
+        ->  Relation = 'Yenge'
+        ;   is_gelin(Name1, Name2)
+        ->  Relation = 'Gelin'
+        ;   is_damat(Name1, Name2)
+        ->  Relation = 'Damat'
+        ;   are_elti(Name1, Name2)
+        ->  Relation = 'Elti'
+        ;   are_bacanak(Name1, Name2)
+        ->  Relation = 'Bacanak'
+        ;   are_baldiz(Name1, Name2)
+        ->  Relation = 'Baldiz'
+        ;   are_kayinbirader(Name1, Name2)
+        ->  Relation = 'Kayinbirader'
+        ;   are_kayinvalide(Name1, Name2)
+        ->  Relation = 'Kayinvalide'
+        ;   are_kayinpeder(Name1, Name2)
+        ->  Relation = 'Kayinpeder'
+        ;   Relation = 'No direct relationship found.'
+        
     ).
+
 
 find_marriage_relation(Name1, Name2, _, _, Relation) :-
     (   marriage(Name1, Spouse1) ; marriage(Spouse1, Name1)
     ),
     Spouse1 = Name2,
-    Relation = 'Eş'.
+    Relation = 'Es'.
 
 find_marriage_relation(Name1, Name2, _, G2, Relation) :-
     (   marriage(Name1, Spouse1) ; marriage(Spouse1, Name1)
