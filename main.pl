@@ -143,6 +143,11 @@ marry(Name1, Name2) :-
         )
         )
     ).
+
+spouse_of(Person1, Person2) :-
+    marriage(Person1, Person2);
+    marriage(Person2, Person1).
+
 is_uncle_by_father(Uncle, Person) :-
     person(N, S, _, _, _, Father, _),
     full_name(N, S, Person),
@@ -188,7 +193,7 @@ is_grandparent_of(Grandparent, Child) :-
         (Grandparent = GF2; Grandparent = GM2)
     ). 
 
-    is_nephew_or_niece(NephewOrNiece, Person) :-
+is_nephew_or_niece(NephewOrNiece, Person) :-
     person(NP, SP, _, _, _, Father, Mother),
     full_name(NP, SP, NephewOrNiece),
     (   person(NF, SF, _, _, _, _, _),
@@ -200,25 +205,34 @@ is_grandparent_of(Grandparent, Child) :-
         are_siblings(Mother, Person)
     ).
 
-    is_cousin(Cousin, Person) :-
-    person(N, S, _, _, _, Father, Mother),
-    full_name(N, S, Person),
-    (   are_siblings(UncleOrAunt, Father)
-    ;   are_siblings(UncleOrAunt, Mother)
-    ),
-    person(NC, SC, _, _, _, UncleOrAunt, _),
-    full_name(NC, SC, Cousin)
+is_cousin(Cousin, Person) :-
+    person(NP, SP, _, _, _, Father, Mother),
+    full_name(NP, SP, Person),
+    (   
+        are_siblings(UncleOrAunt, Father),
+        person(NC, SC, _, _, _, UncleOrAunt, _),
+        full_name(NC, SC, Cousin)
     ;
-    person(NC, SC, _, _, _, _, UncleOrAunt),
-    full_name(NC, SC, Cousin).
+        are_siblings(UncleOrAunt, Mother),
+        person(NC, SC, _, _, _, UncleOrAunt, _),
+        full_name(NC, SC, Cousin)
+    ;
+        are_siblings(UncleOrAunt, Father),
+        person(NC, SC, _, _, _, _, UncleOrAunt),
+        full_name(NC, SC, Cousin)
+    ;
+        are_siblings(UncleOrAunt, Mother),
+        person(NC, SC, _, _, _, _, UncleOrAunt),
+        full_name(NC, SC, Cousin)
+    ).
 
-    is_child(Child, Parent) :-
+is_child(Child, Parent) :-
     person(NC, SC, _, _, _, Father, Mother),
     full_name(NC, SC, Child),
     (Parent = Father ; Parent = Mother),
     Parent \= none.
 
-    is_younger_sister(YoungerSister, Person) :-
+is_younger_sister(YoungerSister, Person) :-
     are_siblings(YoungerSister, Person),
     person(NS, SS, f, BirthYearS, _, _, _),
     full_name(NS, SS, YoungerSister),
@@ -226,7 +240,7 @@ is_grandparent_of(Grandparent, Child) :-
     full_name(NP, SP, Person),
     BirthYearS > BirthYearP.
 
-    is_younger_brother(YoungerBrother, Person) :-
+is_younger_brother(YoungerBrother, Person) :-
     are_siblings(YoungerBrother, Person),
     person(NB, SB, m, BirthYearB, _, _, _),
     full_name(NB, SB, YoungerBrother),
@@ -235,7 +249,7 @@ is_grandparent_of(Grandparent, Child) :-
     BirthYearB > BirthYearP.
 
 
-    is_abla(Abla, Person) :-
+is_abla(Abla, Person) :-
     are_siblings(Abla, Person),
     person(NA, SA, f, BirthYearA, _, _, _),
     full_name(NA, SA, Abla),
@@ -243,7 +257,7 @@ is_grandparent_of(Grandparent, Child) :-
     full_name(NP, SP, Person),
     BirthYearA < BirthYearP.
 
-    is_abi(Abi, Person) :-
+is_abi(Abi, Person) :-
     are_siblings(Abi, Person),
     person(NA, SA, m, BirthYearA, _, _, _),
     full_name(NA, SA, Abi),
@@ -251,7 +265,7 @@ is_grandparent_of(Grandparent, Child) :-
     full_name(NP, SP, Person),
     BirthYearA < BirthYearP.
 
-    is_eniste(Eniste, Person) :-
+is_eniste(Eniste, Person) :-
     (   are_siblings(Sister, Person),
         spouse(Eniste, Sister),
         male(Eniste)
@@ -261,7 +275,7 @@ is_grandparent_of(Grandparent, Child) :-
         spouse(Eniste, SisterInLaw),
         male(Eniste)
     ).
-    is_yenge(Yenge, Person) :-
+is_yenge(Yenge, Person) :-
     (   are_siblings(Brother, Person),
         spouse(Brother, Yenge),
         female(Yenge)
@@ -271,7 +285,7 @@ is_grandparent_of(Grandparent, Child) :-
         spouse(BrotherInLaw, Yenge),
         female(Yenge)
     ).
-    is_gelin(Gelin, Person) :-
+is_gelin(Gelin, Person) :-
     person(NC, SC, _, _, _, Father, Mother),
     full_name(NC, SC, Child),
     (Person = Father ; Person = Mother),
@@ -279,7 +293,7 @@ is_grandparent_of(Grandparent, Child) :-
     spouse(Child, Gelin),
     female(Gelin).
 
-    is_damat(Damat, Person) :-
+is_damat(Damat, Person) :-
     person(NC, SC, _, _, _, Father, Mother),
     full_name(NC, SC, Child),
     (Person = Father ; Person = Mother),
@@ -287,18 +301,26 @@ is_grandparent_of(Grandparent, Child) :-
     spouse(Child, Damat),
     male(Damat).
 
-    is_son(Son, Parent) :-
+is_son(Son, Parent) :-
     person(NC, SC, m, _, _, Father, Mother),
     full_name(NC, SC, Son),
     (Parent = Father ; Parent = Mother),
     Parent \= none.
 
-    is_daughter(Daughter, Parent) :-
+is_daughter(Daughter, Parent) :-
     person(NC, SC, f, _, _, Father, Mother),
     full_name(NC, SC, Daughter),
     (Parent = Father ; Parent = Mother),
     Parent \= none.
 
+is_spouse(Spouse, Person) :-
+    person(N, S, _, _, _, _, _),
+    full_name(N, S, Person),
+    (   marriage(Person, Spouse)
+    ;   marriage(Spouse, Person)
+    ),
+    person(NS, SS, _, _, _, _, _),
+    full_name(NS, SS, Spouse).
 
 are_elti(Wife1, Wife2) :-
     person(_, _, female, _, _, _, _),  
@@ -324,8 +346,7 @@ are_baldiz(Person, Baldiz) :-
 are_kayinbirader(Person, Kayinbirader) :-
     spouse(Person, Spouse),
     (
-        (are_siblings(Spouse, Kayinbirader), male(Kayinbirader))
-    ;  
+        (are_siblings(Spouse, Kayinbirader), male(Kayinbirader))  
     ).
 are_kayinvalide(Person, Kayinvalide) :-
     spouse_of(Person, Spouse),
@@ -436,14 +457,20 @@ should_include_person(_-FullName) :-
 
 % Relation finding predicates
 find_relation(Name1, Name2, Relation) :-
-    person(N1, S1, G1, _, _, F1, M1),
-    person(N2, S2, G2, _, _, F2, M2),
+    person(N1, S1, _, _, _, _, _),
+    person(N2, S2, _, _, _, F2, M2),
     full_name(N1, S1, Name1),
     full_name(N2, S2, Name2),
     (   Name1 = F2
     ->  Relation = 'Baba'
     ;   Name1 = M2
     ->  Relation = 'Anne'
+    ;   is_spouse(Name1, Name2)
+        ->  Relation = 'Es'
+    ;   is_son(Name1, Name2)
+        ->  Relation = 'Ogul'
+    ;   is_daughter(Name1, Name2)
+        ->  Relation = 'Kiz'
         ;is_uncle_by_father(Name1, Name2)
         ->  Relation = 'Amca'
         ;   is_uncle_by_mother(Name1, Name2)
@@ -454,14 +481,10 @@ find_relation(Name1, Name2, Relation) :-
         ->  Relation = 'Teyze'
         ;   is_nephew_or_niece(Name1, Name2)
         ->  Relation = 'Yegen'
-        ;   is_cousin(Name1, Name2)
-        ->  Relation = 'Kuzen'
-        ;   is_child(Name1, Name2)
-        ->  Relation = 'cocuk'
         ;   is_younger_sister(Name1, Name2)
-        ->  Relation = 'Kücük Kiz Kardes'
+        ->  Relation = 'Kiz Kardes'
         ;   is_younger_brother(Name1, Name2)
-        ->  Relation = 'Kücük Erkek Kardes'
+        ->  Relation = 'Erkek Kardes'
         ;   is_abla(Name1, Name2)
         ->  Relation = 'Abla'
         ;   is_abi(Name1, Name2)
@@ -486,31 +509,17 @@ find_relation(Name1, Name2, Relation) :-
         ->  Relation = 'Kayinvalide'
         ;   are_kayinpeder(Name1, Name2)
         ->  Relation = 'Kayinpeder'
+        ;   is_cousin(Name1, Name2)
+        ->  Relation = 'Kuzen'
         ;   Relation = 'No direct relationship found.'
         
     ).
-
 
 find_marriage_relation(Name1, Name2, _, _, Relation) :-
     (   marriage(Name1, Spouse1) ; marriage(Spouse1, Name1)
     ),
     Spouse1 = Name2,
     Relation = 'Es'.
-
-find_marriage_relation(Name1, Name2, _, G2, Relation) :-
-    (   marriage(Name1, Spouse1) ; marriage(Spouse1, Name1)
-    ),
-    Spouse1 \= Name2,
-    person(SN, SS, _, _, _, SF, SM),
-    full_name(SN, SS, Spouse1),
-    (   are_siblings(Spouse1, Name2)
-    ->  (G2 = f -> Relation = 'Baldiz' ; Relation = 'Kayinbirader')
-    ;   Name2 = SM
-    ->  Relation = 'Kayinvalide'
-    ;   Name2 = SF
-    ->  Relation = 'Kayinpeder'
-    ;   Relation = 'No direct relationship found.'
-    ).
 
 % CLI Interface
 run_cli :-
@@ -588,9 +597,6 @@ process_choice('5') :-
 
 process_choice('6') :-
     write('Goodbye!'), nl.
-
-process_choice(_) :-
-    write('Invalid choice.'), nl.
 
 process_person_operation('1') :-
     write('please type the father name and surname:'), nl,
