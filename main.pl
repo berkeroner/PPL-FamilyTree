@@ -109,6 +109,10 @@ print_info(FullName) :-
     format('Total child: ~w~n', [ChildCount]),
     (is_alive(FullName) -> write('Alive') ; write('Dead')), nl.
 
+is_married(Person) :-
+    marriage(Person, _);
+    marriage(_, Person).
+
 % Marriage predicate
 marry(Name1, Name2) :-
     person(N1, S1, G1, _, _, _, _),
@@ -122,12 +126,61 @@ marry(Name1, Name2) :-
         ->  write('Under 18 age marriage!'), nl
         ;   (   are_close_relatives(Name1, Name2)
             ->  write('Invalid marriage due to close relationship.'), nl
-            ;   assertz(marriage(Name1, Name2)),
-                write('Marriage registered.'), nl
+            ;   (   is_married(Name1)
+                ->  write(Name1), write(' is already married!'), nl
+                ;   (   is_married(Name2)
+                    ->  write(Name2), write(' is already married!'), nl
+                ;   assertz(marriage(Name1, Name2)),
+                    write('Marriage registered.'), nl
+            )
             )
         )
+        )
     ).
+is_uncle_by_father(Uncle, Person) :-
+    person(N, S, _, _, _, Father, _),
+    full_name(N, S, Person),
+    are_siblings(Uncle, Father),
+    person(NU, SU, m, _, _, _, _),
+    full_name(NU, SU, Uncle).   
+is_uncle_by_mother(Uncle, Person) :-
+    person(N, S, _, _, _, _, Mother),
+    full_name(N, S, Person),
+    are_siblings(Uncle, Mother),
+    person(NU, SU, m, _, _, _, _),
+    full_name(NU, SU, Uncle).
 
+is_aunt_by_father(Aunt, Person) :-
+    person(N, S, _, _, _, Father, _),
+    full_name(N, S, Person),
+    are_siblings(Aunt, Father),
+    person(NA, SA, f, _, _, _, _),
+    full_name(NA, SA, Aunt). 
+
+is_aunt_by_mother(Aunt, Person) :-
+    person(N, S, _, _, _, _, Mother),
+    full_name(N, S, Person),
+    are_siblings(Aunt, Mother),
+    person(NA, SA, f, _, _, _, _),
+    full_name(NA, SA, Aunt).   
+
+is_parent_of(Parent, Child) :-
+    person(NC, SC, _, _, _, Father, Mother),
+    full_name(NC, SC, Child),
+    (Parent = Father ; Parent = Mother),
+    Parent \= none.
+
+is_grandparent_of(Grandparent, Child) :-
+    person(NC, SC, _, _, _, Father, Mother),
+    full_name(NC, SC, Child),
+    (   person(NF, SF, _, _, _, GF1, GM1),
+        full_name(NF, SF, Father),
+        (Grandparent = GF1; Grandparent = GM1)
+    ;
+        person(NM, SM, _, _, _, GF2, GM2),
+        full_name(NM, SM, Mother),
+        (Grandparent = GF2; Grandparent = GM2)
+    ).    
 % Check if two people are siblings
 are_siblings(Name1, Name2) :-
     person(N1, S1, _, _, _, Father, Mother),
@@ -145,8 +198,18 @@ are_close_relatives(Name1, Name2) :-
     ;   person(N1, S1, _, _, _, _, Name2), full_name(N1, S1, Name1)
     ;   person(N2, S2, _, _, _, Name1, _), full_name(N2, S2, Name2)
     ;   person(N2, S2, _, _, _, _, Name1), full_name(N2, S2, Name2)
+    ;   is_grandparent_of(Name1, Name2)
+    ;   is_grandparent_of(Name2, Name1)
+    ;   is_uncle_by_father(Name1, Name2)
+    ;   is_uncle_by_father(Name2, Name1)
+    ;   is_uncle_by_mother(Name1, Name2)
+    ;   is_uncle_by_mother(Name2, Name1)
+    ;   is_aunt_by_father(Name1, Name2)
+    ;   is_aunt_by_father(Name2, Name1)
+    ;   is_aunt_by_mother(Name1, Name2)
+    ;   is_aunt_by_mother(Name2, Name1)
     ).
-
+    
 % Print family tree
 print_tree :-
     findall(Level-FullName, 
