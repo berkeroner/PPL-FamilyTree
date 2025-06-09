@@ -1,19 +1,21 @@
-% Facts for storing person information
+
 % person(Name, Surname, Gender, BirthYear, DeathYear, Father, Mother)
 :- dynamic person/7.
 :- dynamic marriage/2.
 :- dynamic child/2.
 
-% Helper predicates
+%Combine name and surname into full name
 full_name(Name, Surname, FullName) :-
     atom_concat(Name, ' ', Temp),
     atom_concat(Temp, Surname, FullName).
 
+% Check if a person is alive
 is_alive(FullName) :-
     person(Name, Surname, _, _, DeathYear, _, _),
     full_name(Name, Surname, FullName),
     (var(DeathYear) ; DeathYear = none).
 
+% Calculate age of a person
 age(FullName, Age) :-
     person(Name, Surname, _, BirthYear, DeathYear, _, _),
     full_name(Name, Surname, FullName),
@@ -26,16 +28,14 @@ age(FullName, Age) :-
     ),
     Age is EndYear - BirthYear.
 
-% Add person predicate
+% Add person function
 add_person(Name, Surname, Gender, BirthYear, DeathYear, Father, Mother) :-
     full_name(Name, Surname, FullName),
     \+ person(Name, Surname, _, _, _, _, _),
-    % Handle death year
     (   (DeathYear = none ; var(DeathYear))
     ->  ActualDeathYear = none
     ;   ActualDeathYear = DeathYear
     ),
-    % Handle parent names
     (   Father = none
     ->  ActualFather = none
     ;   ActualFather = Father
@@ -58,14 +58,14 @@ add_person(Name, Surname, Gender, BirthYear, DeathYear, Father, Mother) :-
     ;   true
     ).
 
-% Update birth year
+% Update birth year function
 update_birth(FullName, NewBirthYear) :-
     person(Name, Surname, Gender, _, DeathYear, Father, Mother),
     full_name(Name, Surname, FullName),
     retract(person(Name, Surname, Gender, _, DeathYear, Father, Mother)),
     assertz(person(Name, Surname, Gender, NewBirthYear, DeathYear, Father, Mother)).
 
-% Update death year
+% Update death year function
 update_death(FullName, NewDeathYear) :-
     person(Name, Surname, Gender, BirthYear, _, Father, Mother),
     full_name(Name, Surname, FullName),
@@ -80,7 +80,7 @@ update_death(FullName, NewDeathYear) :-
     ),
     assertz(person(Name, Surname, Gender, BirthYear, DeathValue, Father, Mother)).
 
-% Calculate level in family tree
+% Calculate level function
 level(FullName, Level) :-
     person(Name, Surname, _, _, _, Father, Mother),
     full_name(Name, Surname, FullName),
@@ -89,7 +89,7 @@ level(FullName, Level) :-
     max_list([FatherLevel, MotherLevel, -1], MaxParentLevel),
     Level is MaxParentLevel + 1.
 
-% Helper to get parents level safely
+% Get parent level function
 get_parent_level(none, -1) :- !.
 get_parent_level(ParentFullName, Level) :-
     person(PName, PSurname, _, _, _, _, _),
@@ -108,30 +108,31 @@ print_info(FullName) :-
     format('Level: ~w~n', [Level]),
     format('Total child: ~w~n', [ChildCount]),
     (is_alive(FullName) -> write('Alive') ; write('Dead')), nl.
-% Does he have a wife?
+
+% Does he/she have a wife?
 is_married(Person) :-
     marriage(Person, _);
     marriage(_, Person).
 
-% Who is his wife?
+% Who is his/her wife?
 spouse(Person, Spouse) :-
     marriage(Person, Spouse)
     ;
     marriage(Spouse, Person).
 
-% Marriage predicate
+% Marriage function
 marry(Name1, Name2) :-
     person(N1, S1, G1, _, _, _, _),
     person(N2, S2, G2, _, _, _, _),
     full_name(N1, S1, Name1),
     full_name(N2, S2, Name2),
     (   G1 = G2
-    ->  write('Same-sex marriage!.'), nl
+    ->  write('Invalid Marriage: Same gender!'), nl
     ;   (   age(Name1, Age1), age(Name2, Age2),
             (Age1 < 18 ; Age2 < 18)
-        ->  write('Under 18 age marriage!'), nl
+        ->  write('Invalid Marriage: Under 18 age!'), nl
         ;   (   are_close_relatives(Name1, Name2)
-            ->  write('Invalid marriage due to close relationship.'), nl
+            ->  write('Invalid Marriage: Close relationship!'), nl
             ;   (   is_married(Name1)
                 ->  write(Name1), write(' is already married!'), nl
                 ;   (   is_married(Name2)
@@ -152,10 +153,12 @@ female(FullName) :-
     person(Name, Surname, f, _, _, _, _),
     full_name(Name, Surname, FullName).    
 
+% Check if two people are spouses
 spouse_of(Person1, Person2) :-
     marriage(Person1, Person2);
     marriage(Person2, Person1).
 
+% Define relationships
 is_uncle_by_father(Uncle, Person) :-
     person(N, S, _, _, _, Father, _),
     full_name(N, S, Person),
@@ -405,7 +408,6 @@ are_close_relatives(Name1, Name2) :-
     ;   are_kayinpeder(Name2,Name1)
     ;   are_kayinvalide(Name1,Name2)
     ;   are_kayinvalide(Name2,Name1)
-
     ;   is_gelin(Name1,Name2)
     ;   is_gelin(Name2,Name1)
     ;   is_yenge(Name1,Name2)
@@ -419,7 +421,7 @@ are_close_relatives(Name1, Name2) :-
 
     ).
     
-% Print family tree
+% Print the family tree function
 print_tree :-
     findall(Level-FullName, 
             (person(N, S, _, _, _, _, _), full_name(N, S, FullName), level(FullName, Level)), 
@@ -430,7 +432,7 @@ print_tree :-
     group_pairs_by_key(Sorted, Grouped),
     print_levels(Grouped).
 
-
+% Adjust spouse levels in the family tree
 adjust_spouse_levels(LevelPairs, Adjusted) :-
     adjust_spouse_levels(LevelPairs, LevelPairs, Adjusted).
 
@@ -443,7 +445,7 @@ adjust_spouse_levels([Level1-Name|Rest], All, [FinalLevel-Name|AdjustedRest]) :-
     ),
     adjust_spouse_levels(Rest, All, AdjustedRest).
 
-
+% Print levels of the family tree
 print_levels([]).
 print_levels([Level-Names|Rest]) :-
     format('---LEVEL ~w---~n', [Level]),
@@ -465,6 +467,7 @@ print_level_names([Name|Rest], Printed) :-
         print_level_names(Rest, NewPrinted)
     ).
 
+% Check if a person should be included in the family tree
 should_include_person(_-FullName) :-
     % Kisinin anne veya babasi soy agacinda kayitliysa goster
     person(N, S, _, _, _, Father, Mother),
@@ -474,8 +477,7 @@ should_include_person(_-FullName) :-
     ;   (marriage(FullName, _) ; marriage(_, FullName))  % Veya evliyse goster
     ).
 
-
-% Relation finding predicates
+% Find the relationship between two people
 find_relation(Name1, Name2, Relation) :-
     person(N1, S1, _, _, _, _, _),
     person(N2, S2, _, _, _, F2, M2),
@@ -541,7 +543,7 @@ find_marriage_relation(Name1, Name2, _, _, Relation) :-
     Spouse1 = Name2,
     Relation = 'Es'.
 
-% CLI Interface
+% Main loop
 run_cli :-
     repeat,
     nl,
@@ -560,6 +562,7 @@ run_cli :-
     ChoiceAtom = '6',
     !.
 
+% Process the choice - 1
 process_choice('1') :-
     write('please type first person name and surname:'), nl,
     write('|: '),
@@ -578,6 +581,7 @@ process_choice('1') :-
     ;   write('One or both persons not found.'), nl
     ).
 
+% Process the choice - 2
 process_choice('2') :-
     write('1-) Add person'), nl,
     write('2-) Update person'), nl,
@@ -587,6 +591,7 @@ process_choice('2') :-
     atom_string(SubChoiceAtom, SubChoice),
     process_person_operation(SubChoiceAtom).
 
+% Process the choice - 3
 process_choice('3') :-
     write('please type the person name and surname:'), nl,
     write('|: '),
@@ -597,9 +602,11 @@ process_choice('3') :-
     ;   write('Person not found.'), nl
     ).
 
+% Process the choice - 4
 process_choice('4') :-
     print_tree.
 
+% Process the choice - 5
 process_choice('5') :-
     write('name of first person :'), nl,
     write('|: '),
@@ -615,9 +622,11 @@ process_choice('5') :-
     ;   write('One or both people not found.'), nl
     ).
 
+% Process the choice - 6
 process_choice('6') :-
     write('Goodbye!'), nl.
 
+% Process operations
 process_person_operation('1') :-
     write('please type the father name and surname:'), nl,
     write('|: '),
