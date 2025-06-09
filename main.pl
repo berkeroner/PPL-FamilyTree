@@ -397,6 +397,20 @@ are_close_relatives(Name1, Name2) :-
     ;   are_kayinpeder(Name2,Name1)
     ;   are_kayinvalide(Name1,Name2)
     ;   are_kayinvalide(Name2,Name1)
+    
+    ;   is_abi(Name1,Name2)
+    ;   is_abi(Name2,Name1)
+    ;   is_gelin(Name1,Name2)
+    ;   is_gelin(Name2,Name1)
+    ;   is_yenge(Name1,Name2)
+    ;   is_yenge(Name2,Name1)
+    ;   is_eniste(Name1,Name2)
+    ;   is_eniste(Name2,Name1)
+    ;   is_damat(Name1,Name2)
+    ;   is_damat(Name2,Name1)
+    ;   is_child(Name1,Name2)
+    ;   is_child(Name2,Name1)
+
     ).
     
 % Print family tree
